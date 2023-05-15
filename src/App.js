@@ -1,57 +1,51 @@
-import React from 'react';
-import logo from './logo.svg';
-import { Counter } from './features/counter/Counter';
-import './App.css';
-
+import { CssBaseline, Grid } from "@material-ui/core";
+import { useEffect, useState } from "react";
+import { getPlaceData } from "./api";
+import Header from "./components/Header/Header";
+import List from "./components/List/List";
+import Map from "./components/Map/Map";
 function App() {
+  const [places, setPlaces] = useState()
+  const [coordinates, setCoordinates] = useState({})
+  const [bounds, setBounds] = useState(null)
+  const [childClicked, setChildclicked ] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [type, setType] = useState('restaurants')
+  const [rating, setRating] = useState('0')
+  const [filteredPlaces, setFilteredPlaces] = useState([]);
+  useEffect(()=>{
+    navigator.geolocation.getCurrentPosition(({coords: {latitude, longitude}})=>{
+    setCoordinates({lat: latitude, lng: longitude})
+    })
+   },[])
+  useEffect(()=>{
+    setFilteredPlaces(places?.filter(place => place?.rating >= rating))
+  },[rating])
+  useEffect(()=>{
+    setIsLoading(true)
+    getPlaceData(type, bounds?.sw, bounds?.ne)
+    .then((data)=>{
+       setFilteredPlaces([])
+       setPlaces(data)
+       setIsLoading(false)
+    })
+  },[coordinates, type])
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <Counter />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <span>
-          <span>Learn </span>
-          <a
-            className="App-link"
-            href="https://reactjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux-toolkit.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux Toolkit
-          </a>
-          ,<span> and </span>
-          <a
-            className="App-link"
-            href="https://react-redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React Redux
-          </a>
-        </span>
-      </header>
-    </div>
+    <>
+      <CssBaseline />
+      <Header setCoordinates={setCoordinates}/>
+      <Grid container spacing={3} style={{width: '100%'}}>
+        <Grid item xs={12} md={4}>
+          <List 
+          setType={setType} setRating={setRating} rating={rating} type={type} isLoading={isLoading} places={filteredPlaces?.length > 0 ? filteredPlaces : places}  childClicked={childClicked}/>
+        </Grid>
+        <Grid item xs={12} md={8}>
+          <Map setChildclicked={setChildclicked} places={filteredPlaces?.length > 0 ? filteredPlaces : places} coordinates={coordinates} setCoordinates={setCoordinates} setBounds={setBounds}
+          />
+        </Grid>
+      </Grid>
+    </>
   );
 }
 
